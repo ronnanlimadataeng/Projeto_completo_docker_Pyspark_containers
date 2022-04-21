@@ -20,6 +20,7 @@ docker-compose -f docker-compose-parcial.yml up -d
 docker-compose -f docker-compose-parcial.yml stop (caso seja necessario)
 
 3 ) copiando o arquivo jars para dentro do container spark, dependencia necessaria
+
 3.1) copiar o jars pra dentro da pasta do jupyter
 docker cp parquet-hadoop-bundle-1.6.0.jar jupyter-spark:/opt/spark/jars
 
@@ -28,6 +29,7 @@ docker exec -it jupyter-spark ls /opt/spark/jars | grep 'parquet-hadoop-bundle'
 
 4 ) link para baixar os arquivos que iremos trabalhar
 https://mobileapps.saude.gov.br/esus-vepi/files/unAFkcaNDeXajurGB7LChj8SgQYS2ptm/04bd3419b22b9cc5c6efac2c6528100d_HIST_PAINEL_COVIDBR_06jul2021.rar
+
 4.1) Fazer donwload do arquivo dentro do cluster no terminal
 /home/ronnan/spark1/input/data_covid
 curl -O https://mobileapps.saude.gov.br/esus-vepi/files/unAFkcaNDeXajurGB7LChj8SgQYS2ptm/04bd3419b22b9cc5c6efac2c6528100d_HIST_PAINEL_COVIDBR_06jul2021.rar
