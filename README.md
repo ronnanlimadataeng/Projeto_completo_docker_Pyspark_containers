@@ -16,8 +16,15 @@ mkdir /home/ronnan/spark1
 
 ##### 2 ) Montando imagens dos containers docker e criar cluster bigdata
 ``` 
-docker-compose -f docker-compose-parcial.yml up -d
+docker-compose -f docker-compose-parcial.yml up -d (montar as imagens e iniciar os containers)
 docker-compose -f docker-compose-parcial.yml stop (caso seja necessario)
+```
+##### 2.1 ) Verificar se os containers estão rodando e ativos
+```
+docker ps
+```
+```
+docker ps -a (caso queria verificar os inativos)
 ```
 
 ##### 3 ) Copiando o arquivo jars para dentro do container spark, dependencia necessaria
