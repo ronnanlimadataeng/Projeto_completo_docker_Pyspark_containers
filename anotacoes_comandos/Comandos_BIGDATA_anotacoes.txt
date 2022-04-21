@@ -1,0 +1,2021 @@
+----------------------------------------------> DOCKER <------------------------------------------------------------------
+docker exec -it namenode bash
+docker exec -it datanode bash
+docker exec -it hive-metastore-postgresql bash
+docker exec -it hive-metastore bash
+docker exec -it hive-server bash
+docker exec -it database bash
+docker exec -it zookeeper bash
+docker exec -it hbase-master bash
+docker exec -it spark bash
+docker exec -it jupyter-spark bash (ultimo container ativo, usar este)
+
+
+docker cp /home/ronnan/PycharmProjects/primeiro_projeto_escala/main.py jupyter-spark:/home
+
+docker cp /home/ronnan/IdeaProjects/primeiro_projeto_scala/target/scala-2.11/primeiro_projeto_scala_2.11-0.1.0-SNAPSHOT.jar jupyter-spark:/home
+
+
+
+parando containers do cluster spark1
+docker-compose -f docker-compose-parcial.yml stop
+
+iniciando containers do cluster spark1
+docker-compose -f docker-compose-parcial.yml up -d
+
+docker ps | awk '{print $2}' IMPRIMIR CONTAINERS
+docker start container_name   INICIAR UM CONTAINER DOCKER
+
+verificar se o jars está dentro da pasta
+docker exec -it jupyter-spark ls /opt/spark/jars | grep 'parquet-hadoop-bundle'
+
+copiar o jars pra dentro da pasta do jupyter
+docker cp parquet-hadoop-bundle-1.6.0.jar jupyter-spark:/opt/spark/jars
+
+cd elastic   DOCKER-COMPOSE DOWN   DOCKER VOLUME PRUNE
+cd kafka     DOCKER-COMPOSE DOWN   DOCKER VOLUME PRUNE
+cd mongodb   DOCKER-COMPOSE DOWN   DOCKER VOLUME PRUNE
+cd redis     DOCKER-COMPOSE DOWN   DOCKER VOLUME PRUNE
+
+iniciando pycharm
+~/.local/myapps/pycharm-community-2022.1/bin/pycharm.sh
+
+
+----------------------------------------------> HDFS<------------------------------------------------------------------
+LER ARQUIVO COM OS DADOS DE TAMANHO
+hdfs dfs -ls -h -R /user/hive/warehouse/text_sem_compressao
+
+LER OS 10 RESULTADOS
+hdfs dfs -cat  /user/hive/warehouse/ronnan.db/titles/part-m-00000 | head -n 10
+
+ENVIAR ARQUIVO PARA DENTRO DO HDFS
+hdfs dfs -put /input/exercises-data/juros_selic/ /user/ronnan/data
+
+hdfs dfs -put input/data_covid/*csv /user/ronnan/data/data_covid
+
+hdfs dfs -put input/data_covid/*csv /user/ronnan/data/data_covid
+
+BAIXANDO ARQUIVOS PRA DENTRO DO CLUSTER
+curl -O https://mobileapps.saude.gov.br/esus-vepi/files/unAFkcaNDeXajurGB7LChj8SgQYS2ptm/04bd3419b22b9cc5c6efac2c6528100d_HIST_PAINEL_COVIDBR_06jul2021.rar
+
+LISTA TUDO QUE ESTÁ DENTRO DO HDFS
+hdfs dfs -ls -R / 
+
+
+
+
+----------------------------------------------> Hive<------------------------------------------------------------------
+SELECIONAR DATABASES
+show databases;
+
+SELECIONAR O BANCO DE DADOS
+use nome_do_banco_de_dados;
+
+SELECIONAR TABLES
+show tables;
+
+MOSTRANDO OS 10 PRIMEIROS RESULTADOS titles
+select * from titles limit 10;
+
+CRIAR BANCO DE DADOS
+create database ronnan;
+
+CRIAR TABELA dados DENTRO DO HIVE
+create table dados(zip_code int, total_populacao int, idade_media float, total_homens int, total_mulheres int)
+row format delimited
+fields terminated by ','
+lines terminated by '\n'
+stored as textfile
+tblproperties("skip.header.line.count"="1");
+
+VISUALIZAR OS CAMPOS E OS TIPOS DE DADOS
+desc dados;
+
+VISUALIZAR OS CAMPOS E TIPOS DE DADOS COM TODAS AS INFOS ADICIONAIS
+desc formatted dados;
+
+
+ENVIAR ARQUIVO DO HDFS E ENVIAR PARA UMA TABELA HIVE
+
+ACESSANDO H
+docker exec -it hive-server bash   
+> beeline -u jdbc:hive2://localhost:10000
+
+
+use default; select data,casosNovos from dados_covid_teste2 limit 5;
+
+
+----------------------------------------------> MYSQL<------------------------------------------------------------------
+LOGAR
+mysql  -psecret / mysql -h localhost -u root -psecret / 
+
+SELECT
+select * from tabela_fulano limit 10;
+
+VER TABELAS
+show tables;
+
+CRIAR UMA TABELA COM DADOS DE OUTRA
+create table tabela_fulano1 select Campo_fulano from tabela_fulano2;
+
+DROP
+drop table tabela_fulano;
+
+employees.titles
+
+sqoop eval --connect jdbc:mysql://database/employees --username root --password secret --query "select * from titles order by limit 5"
+
+---------------------------------------------> SPARK/SCALA <------------------------------------------------------------------
+INICIANDO O SPARK(dentro do container)
+spark-shell
+
+CRIANDO UM DATAFRAME
+val jurosDF = spark.read.json("/user/aluno/ronnan/data/juros_selic/juros_selic.json")
+
+VISUALIZANDO O SCHEMA
+jurosDF.printSchema
+
+CONSULTADOS OS 5 PRIMEIROS RESULTADOS
+jurosDF.show(5)
+
+CRIAR DATAFRAME COM A OPÇÃO DE INCLUIR CABEÇALHO
+val clienteDF = spark.read.option("header","true").csv("cliente.csv")
+ou
+val alunosDF = spark.read.option("header","true").csv("/user/aluno/ronnan/data/escola/alunos.csv")
+
+CRIAR DATAFRAME SEM CABEÇALHO E INFERIR O ESQUEMA
+val alunosDF = spark.read.option("inferSchema","true").csv("/user/aluno/ronnan/data/escola/alunos.csv")
+
+CRIAR DATAFRAME COM CABEÇALHO E INFERIR O ESQUEMA
+val alunosDF = spark.read.option("header","true").option("inferSchema","true").csv("/user/aluno/ronnan/data/escola/alunos.csv")
+
+CONSULTADOS OS 5 PRIMEIROS RESULTADOS, TODOS OS VALORES DEPOIS DA VIRGULA
+jurosDF.show(5,false)
+
+CRIANDO UM DATAFRAME COM FILTRO A PARTIR DO JUROS JUROSDF
+val jurosDF10 = jurosDF.
+("valor>10")
+
+SALVAR COMO TABELA HIVE
+jurosDF10.write.saveAsTable("Ronnan.tab_juros_selic")   EX:jurosDF10.write.<FORMATO>
+
+CRIANDO UM DATAFRAME DO HIVE
+val jurosHiveDF = spark.read.table("Ronnan.tab_juros_selic")
+
+SALVAR DENTRO DO HDFS EM FORMATO PARQUET
+jurosHiveDF.write.parquet("/user/aluno/Ronnan/Data/jurosHiveDF_save_juros")
+
+CRIANDO O DATAFRAME alunoHiveDF
+val alunosHiveDF = spark.read.table("tab_alunos")
+
+CONSULTA O ID, NOME E ANO QUANDO O ANO DE INGRESSO FOR MAIOR OU IGUAL A 2018
+alunosHiveDF.select("id_discente","nome","ano_ingresso").where("ano_ingresso" >= 2018").show()
+
+CONSULTA POR ORDEM ALFABÉTICA DO NOME O ID, NOME E ANO QUANDO O ANO DE INGRESSO FOR MAIOR OU IGUAL A 2018
+alunosHiveDF.select("id_discente","nome","ano_ingresso").where("ano_ingresso" >= 2018").orderBy($"nome".desc)show()
+
+CONTAR A QUANTIDADE DE REGISTROS DO ITEM ANTERIOR
+alunosHiveDF.select("id_discente","nome","ano_ingresso").where("ano_ingresso" >= 2018").orderBy($"nome".desc)show().count
+
+CRIANDO DATASET - SCALA 
+
+case class Name(id: Integer, name: String)
+
+reg = Seq(Name(1,"Rodrigo"),Name(2,"Augusto"))
+
+regDS = spark.createDataset(reg)
+
+regDS.show
+
+//Imprimir para cada linha só o name
+regDS.foreach(n => println(n.name))
+
+CRIANDO DATASET DE UM DATAFRAME -SCALA
+
+case class Name(id: Integer, name: String)
+
+val regDF = spark.read.json("registros.json") regDS.show
+
+val regDS = regDF.as[Name]
+
+import org.apache.spark.sql.Encoders
+
+val schema = Encoders.product[Name].schema
+
+val regDS = spark.read.schema(schema).json("registros.json") .as[Name]
+
+CRIANDO UM DATASET DE UM RDD
+
+case class Pcode LatLon(pcode: String,
+latlon: Tuple2[Double, Double])
+
+val pLatLonRDD = sc.textFile("latlon.tsv").map(_.split("\t')) \
+.map(fields =>(PcodeLatLon(fields(0), (fields(1).toFloat,fields(2).toFloat))))
+
+val pLatLonDS = spark.createDataset(pLatLonRDD)
+
+pLatLonDS.printSchema
+
+println(pLatLonDS.first)
+
+exercicio spark-shell - scala
+
+1. Criar o DataFrame names_us para ler os arquivos no HDFS “/user/<nome>/data/names”
+val name_us_df = spark.read.csv("/user/ronnan/data/names")
+
+2. Visualizar o Schema do names_us
+name_us_df.printSchema()
+
+3. Mostras os 5 primeiros registros do names_us
+name_us_df.show(3)
+
+4. Criar um case class Nascimento para os dados do names_us
+case class Nascimento(name: String, sexo: String, quantidade: Integer)
+
+5. Criar o Dataset names_ds para ler os dados do HDFS “/user/<nome>/data/names”, com uso do case class Nascimento
+import org.apache.spark.sql.Encoders
+val schema_names = Encoders.product[Nascimento].schema
+val name_ds = spark.read.schema(schema_names).csv("/user/ronnan/data/names")
+val name_ds = spark.read.schema(schema_names).csv("/user/ronnan/data/names").as[Nascimento]
+
+6. Visualizar o Schema do names_ds
+name_ds.printSchema()
+
+7. Mostras os 5 primeiros registros do names_ds
+name_ds.show(5)
+
+8. Salvar o Dataset names_ds no hdfs “/user/<nome>/ names_us_parquet” no formato parquet com compressão snappy
+name_ds.write.save("/user/ronnan/names_us_parquet")
+spark.read.parquet("/user/ronnan/names_us_parquet").printSchema ---> verificando se está na pasta
+
+---------------------------------------------> SPARK/SQL-QUERIES <------------------------------------------------------------------
+CONSULTA TODOS OS BANCOS DE DADOS
+spark.catalog.listDatabases.show()
+
+CONSULTA TODOS OS BANCOS DE DADOS, MOSTRANDO CAMINHO COMPLETO
+spark.catalog.listDatabases.show(false)
+
+DEFINIR O BANCO DE DADOS "ronnan" COMO PRINCIPAL
+spark.catalog.setCurrentDatabase("ronnan")
+
+CONSULTA TODAS AS TABELAS DO BANCO DE DADOS "RONNAN"
+spark.catalog.listTables.show()
+
+LISTAR TODAS AS COLUNAS DA TABELA "tab_alunos"
+spark.catalog.listColumns("tab_alunos").show
+
+CONSULTA OS 10 PRIMEIROS REGISTROS DA TABELA "tab_alunos" COM USO DO SPARK.SQL
+spark.sql("select * from tab_alunos").show(10)
+
+CONSULTA O ID E O NOME DOS 5 PRIMEIROS CLIENTES DA TABELA "tab_alunos"
+spark.sql("select id_discente,nome from tab_alunos").show(5)
+
+CONSULTA O ID, NOME E ANO QUANDO O ANO DE INGRESSO FOR MAIOR OU IGUAL A 2018
+spark.sql("select id_discente,nome,ano_ingresso from tab_alunos where ano_ingresso>=2018").show()
+
+CONSULTA' POR ORDEM ALFABÉTICA DO NOME O ID, NOME E ANO QUANDO O ANO DE INGRESSO FOR MAIOR OU IGUAL A 2018
+spark.sql("select id_discente,nome,ano_ingresso from tab_alunos where ano_ingresso>=2018 order by nome desc").show()
+
+CONTAR A QUANTIDADE DE REGISTROS DO ITEM ANTERIOR
+spark.sql("select count(nome) from tab_alunos where ano_ingresso>=2018").show()
+
+---------------------------------------------> HBASE <------------------------------------------------------------------
+CRIANDO UM TABELA CONTROLE
+create 'controle',{NAME=>'produto'},{NAME=>'fornecedor'}
+
+LISTANDO AS TABELAS CRIADAS
+list
+
+INSERINDO DADOS EM UMA FAMILIA(PRODUTO)
+put 'controle', '1','produto:nome','ram'
+
+CONSULTANDO SE OS DADOS FORAM INSERIDOS
+scan 'controle'
+
+INSERINDO DADOS EM OUTRA FAMILIA(FORNECEDOR)
+put 'controle','1','fornecedor:estado','SP'
+
+DESCREVER QUE FUNÇÕES FORAM HABILITADAS
+describe 'controle'
+
+CONTAR O NUMERO DE REGISTROS QUE FORAM INSERIDOS
+count 'controle'
+
+ALTERAR VERSÕES DA FAMILIA PRODUTO DE 1 PARA 3
+alter 'controle',{NAME=>'produto',VERSIONS=>3}
+
+INSERINDO NOVA INFORMAÇÃO NA FAMILIA PRODUTO MUDANDO A QTD PARA 200
+put 'controle', '2', 'produto:qtd','200'
+
+VERIFICAR VERSÃO DA COLUNA QTD
+get 'controle', '2', {COLUMNS=>'produto', VERSIONS=>2}
+
+
+CONSULTANDO SE OS DADOS FORAM INSERIDOS DA FAMILIA ESTADO COLUNA ESTADO
+scan 'controle',{COLUMNS=>'fornecedor:estado'}
+
+CONSULTANDO SE OS DADOS FORAM INSERIDOS DA FAMILIA ESTADO COLUNA ESTADO COM 5 LINHAS
+scan 'controle',{COLUMNS=>'fornecedor:estado',LIMIT => 5}
+
+DELETE DAR A CHAVE(ID) 
+deleteall ' controle', '1'
+
+DELETANDO DA TABELA CONTROLE E DA CHAVE 2, O CAMPO ESTADO
+delete 'controle','2','fornecedor:estado'
+
+----------------------------------------------> SQOOP <------------------------------------------------------------------
+CONSULTAS 
+sqoop eval --connect jdbc:mysql://database/banco_fulano --username root --password secret --query "select * from tabela_fulano order by campo_fulano desc limit 5"
+
+sqoop eval --connect jdbc:mysql://database/employees --username root --password secret --query "select * from titles limit 5"
+
+EXPORTANDO DADOS
+sqoop export --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --export-dir /user/aluno/ronnan/data/titles
+
+APAGAR DADOS DA TABELA
+sqoop eval --connect jdbc:mysql://database/employees --username root --password secret --query "truncate table titles"
+
+IMPORTAÇÃO DA TABELA PARA O HIVE VIA SQOOP
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --warehouse-dir --hive-import --hive-table ronnan.titles
+
+IMPORTANDO TABELAS
+
+importar a partir de uma data x
+sqoop import --table cp_rental_date --connect jdbc:mysql://database/sakila --username root --password secret -m 1 --warehouse-dir /user/hive/warehouse/db_test3 --incremental lastmodified --merge-key rental_id --check-column rental_date --last-value '2005-08-23 22:50:12.0'
+
+import com ultimo valor
+sqoop import --table cp_rental_id --connect jdbc:mysql://database/sakila --username root --password secret -m 1 --warehouse-dir /user/hive/warehouse/db_test3 --incremental append --check-column rental_id --last-value 16049
+
+importa com incremento --append
+sqoop import --table cp_rental_append --connect jdbc:mysql://database/sakila --username root --password secret -m 1 --warehouse-dir /user/hive/warehouse/db_test3 --append
+
+formato padrão
+
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --warehouse-dir /user/hive/warehouse/text_sem_compressao
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --warehouse-dir /user/hive/warehouse/text_snappy --compress --compression-codec org.apache.hadoop.io.compress.SnappyCodec
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --warehouse-dir /user/hive/warehouse/text_gzip --compression-codec=gzip
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --warehouse-dir /user/hive/warehouse/text_bzip2 --compress --compression-codec=bzip2
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --warehouse-dir /user/hive/warehouse/text_deflate --compress --compression-codec=deflate
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --warehouse-dir /user/hive/warehouse/text_lz4 --compress --compression-codec=lz4
+
+--as-parquetfile
+
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --as-parquetfile --warehouse-dir /user/hive/warehouse/parquet_sem_compressao
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --as-parquetfile --warehouse-dir /user/hive/warehouse/parquet_snappy --compress --compression-codec org.apache.hadoop.io.compress.SnappyCodec
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --as-parquetfile --warehouse-dir /user/hive/warehouse/parquet_gzip --compression-codec=gzip
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --as-parquetfile --warehouse-dir /user/hive/warehouse/parquet_bzip2 --compress --compression-codec=bzip2
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --as-parquetfile --warehouse-dir /user/hive/warehouse/parquet_deflate --compress --compression-codec=deflate
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --as-parquetfile --warehouse-dir /user/hive/warehouse/parquet_lz4 --compress --compression-codec=lz4
+
+--as-avrodatafile
+
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --as-avrodatafile --warehouse-dir /user/hive/warehouse/avro_sem_compressao
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --as-avrodatafile --warehouse-dir /user/hive/warehouse/avro_snappy --compress --compression-codec org.apache.hadoop.io.compress.SnappyCodec
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --as-avrodatafile --warehouse-dir /user/hive/warehouse/avro_gzip --compression-codec=gzip
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --as-avrodatafile --warehouse-dir /user/hive/warehouse/avro_bzip2 --compress --compression-codec=bzip2
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --as-avrodatafile --warehouse-dir /user/hive/warehouse/avro_deflate --compress --compression-codec=deflate
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --as-avrodatafile --warehouse-dir /user/hive/warehouse/avro_lz4 --compress --compression-codec=lz4
+
+--as-sequencefile
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --as-sequencefile --warehouse-dir /user/hive/warehouse/sequence_sem_compressao
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --as-sequencefile --warehouse-dir /user/hive/warehouse/sequence_snappy --compress --compression-codec org.apache.hadoop.io.compress.SnappyCodec
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --as-sequencefile --warehouse-dir /user/hive/warehouse/sequence_gzip --compression-codec=gzip
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --as-sequencefile --warehouse-dir /user/hive/warehouse/sequence_bzip2 --compress --compression-codec=bzip2
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --as-sequencefile --warehouse-dir /user/hive/warehouse/sequence_deflate --compress --compression-codec=deflate
+sqoop import --table titles --connect jdbc:mysql://database/employees --username root --password secret -m 1 --as-sequencefile --warehouse-dir /user/hive/warehouse/sequence_lz4 --compress --compression-codec=lz4
+
+checando com -ls
+
+hdfs dfs -ls -h -R /user/hive/warehouse/text_sem_compressao
+hdfs dfs -ls -h -R /user/hive/warehouse/text_snappy
+hdfs dfs -ls -h -R /user/hive/warehouse/text_gzip
+hdfs dfs -ls -h -R /user/hive/warehouse/text_bzip2
+hdfs dfs -ls -h -R /user/hive/warehouse/text_deflate
+hdfs dfs -ls -h -R /user/hive/warehouse/text_lz4
+hdfs dfs -ls -h -R /user/hive/warehouse/parquet_sem_compressao
+hdfs dfs -ls -h -R /user/hive/warehouse/parquet_snappy
+hdfs dfs -ls -h -R /user/hive/warehouse/parquet_gzip
+hdfs dfs -ls -h -R /user/hive/warehouse/parquet_bzip2
+hdfs dfs -ls -h -R /user/hive/warehouse/parquet_deflate
+hdfs dfs -ls -h -R /user/hive/warehouse/parquet
+hdfs dfs -ls -h -R /user/hive/warehouse/avro_sem_compressao
+hdfs dfs -ls -h -R /user/hive/warehouse/avro_snappy
+hdfs dfs -ls -h -R /user/hive/warehouse/avro_gzip
+hdfs dfs -ls -h -R /user/hive/warehouse/avro_bzip2
+hdfs dfs -ls -h -R /user/hive/warehouse/avro_deflate
+hdfs dfs -ls -h -R /user/hive/warehouse/avro_lz4
+hdfs dfs -ls -h -R /user/hive/warehouse/sequence_sem_compressao
+hdfs dfs -ls -h -R /user/hive/warehouse/sequence_snappy
+hdfs dfs -ls -h -R /user/hive/warehouse/sequence_gzip
+hdfs dfs -ls -h -R /user/hive/warehouse/sequence_bzip2
+hdfs dfs -ls -h -R /user/hive/warehouse/sequence_deflate
+hdfs dfs -ls -h -R /user/hive/warehouse/sequence_lz4
+
+
+----------------------------------------------> MongoDB <------------------------------------------------------------------
+INICIAR O CONTAINER CRIANDO AS IMAGENS 
+docker-compose up -d
+
+INICIAR OS CONTAINERS
+docker-compose start
+
+LISTAR OS CONTAINERS ATIVOS
+docker ps
+
+LISTAR OS CONTAINERS QUE NÃO ESTÃO ATIVOS
+docker ps -a
+
+REMOVENDO OS CONTAINERS QUE ESTÃO ATIVOS
+docker-compose down
+
+ACESSAR LOCALHOST DO MONGO
+http://localhost:8081/
+
+CRIAR BANCO DE DADOS
+use <nomeBD>
+
+CONSULTA BANCO DE DADOS
+> show dbs 
+> db
+
+CRIAR COLEÇÃO
+db.createCollection(‘<nomeCollection>’)
+db.createCollection('produto')
+
+CONSULTA COLEÇÕES
+show collections
+
+EXCLUIR COLEÇÃO
+db. <nomeCollection>.drop()
+db.produto.drop()
+
+EXCLUIR BANCO DE DADOS
+db.dropDatabase()
+
+CRIAR DOCUMENTO
+db.cliente.insertMany(
+[
+{
+nome : "Ana",
+idade : 25,
+conhecimento : "Windows, Linux, NoSQL"
+},
+{
+nome : "João"
+}
+]
+)
+
+RENOMEAR COLEÇÃO
+db. <nomeCollection>.renameCollection(‘<nomeNovaCollection>’)
+
+INSERIR UM DOCUMENTO
+db.<nomeCollection>.insertOne({<documento>})
+db.produto.insertOne({_id: 1, "nome": "cpu i5", "qtd": "15"})
+db.test.insertOne({_id: 1, usuario: "semantix", data_acesso : date )
+
+INSERIR N DOCUMENTOS
+db. <nomeCollection>.insertMany([{<documento1>}, {<documento2>},{<documentoN>}])
+
+db.produto.insertMany([{_id: 2, nome: "memória ram", qtd: 10, descricao: {armazenamento: "8GB", tipo:"DDR4"}}, {_id: 3, nome: "mouse", qtd: 50, descricao: {conexao: "USB", so: ["Windows", "Mac", "Linux"]}},{_id: 4, nome: "hd externo", "qtd": 20, descricao: {conexao: "USB", armazenamento: "500GB", so: ["Windows 10", "Windows 8", "Windows 7"]}}])
+
+
+LISTAR DOCUMENTOS COM DETALHES
+db.<nomeCollection>.find().pretty()
+
+APENAS LISTAR
+db.produto.find()
+
+ATUALIZAR DOCUMENTOS
+db.<nomeCollection>.updateOne(<filtro>, <atualização>)
+
+ATUALIZANDO 1 ATRIBUTO
+db.cliente.updateOne({_id: 1},{$set: {idade: 25, estado: “SP”}})
+
+REMOVENDO 1 ATRIBUTO
+db.cliente.updateOne({_id: 1},{$unset: {idade: “”}})
+
+ATUALIZANDO VARIOS DOCUMENTOS
+db.cliente. updateMany({idade: {$gt: 27}},{$set: {seguro_carro: “baixo”}})
+
+ATUALIZAR O ATRIBUTO CASO N EXISTA
+db.cliente. updateMany({idade: {$gt: 27}},{$set: {seguro_carro: “baixo”}})
+
+RENOMEANDO ATRIBUTOS
+db.cliente. updateMany({},{$rename: {“nome”: “nome_completo”}})
+
+ATUALIZANDO DOCUMENTOS COM DATA
+db.test.insertOne( {ts: new Timestamp() ,date: new Date(),data_string: Date(),config_date: new Date("2020-08")} );
+
+SETAR UM VALOR COM DATA ATUAL
+db.cliente. updateMany({idade: {$gt: 27}},{$set: {seguro_carro: " baixo "},$currentDate: { atualizado: { $type: "timestamp" }}})
+
+
+ATUALIZAR UM ELEMENTO DO ARRAY
+db.cliente. updateOne({_id: 2, “conhecimento":“Mongo"},{$set: {" conhecimento.$": “MongoDB"}})
+Adicionar elemento no Array - push
+db.cliente.updateOne({_id: 2},{$push: {conhecimento:"Redis"}})
+db.produto.updateOne({_id: 4}, {$push: {"descricao.sistema" : "Linux"} } )
+
+Remover elemento no Array - pull
+db.cliente.updateOne({_id: 2},{$pull: {conhecimento:"Redis"}})
+db.produto.updateOne({_id: 3}, {$pull: {"descricao.sistema" : "Mac"}, $currentDate:{ts_modificado:{$type:"timestamp"}}} )
+
+ATUALIZANDO E INCLUINDO DATA/DATE
+db.produto.updateMany({ "descricao.conexao" : "USB 2.0"},{$set: {"descricao.conexao": "USB 3.0"},$currentDate:{data_modificacao: { $type: "date" }}})
+db.produto.updateOne({_id: 3}, {$pull: {"descricao.sistema" : "Mac"}, $currentDate:{ts_modificado:{$type:"timestamp"}}} )
+
+CRIAR DOCUMENTO COM DATA/DATE
+db.teste.insertOne({usuario: "semantix", $currentDate : {data_acesso : {$type: date}}})
+
+CONSULTAR CAMPO FILTRANDO DATA/DATE
+db.teste.find({data_acesso: {$gte: ISODate("2020-01-01")}})
+
+CRIAÇÃO INDEX
+db.cliente.createIndex({nome: 1})
+db.cliente.createIndex({nome: 1},{name: "query_produto"})
+
+CONSULTA INDEX
+db.cliente.getIndexes()
+
+NOMEAR INDEX
+db.cliente.createIndex({nome: 1, item: -1},{name: "query itens"})
+
+ITEM EXCLUSIVO INDEX
+db.cliente.createIndex( { user_id: 1 }, { unique: true } )
+
+REMOVER INDEX
+db.<nomeCollection>.dropIndex({<key>})
+db.produto.dropIndex({nome: 1})
+
+EXCLUIR TODOS OS INDEXES DE UMA COLLECTION
+db.<nomeCollection>.dropIndexes()
+
+FORÇAR O OTIMIZADOR DE CONSULTAS DO MONGODB FAZER USO DE UM ÍNDICE ESPECÍFICO
+db.<nomeCollection>.find({<filtro>}).hint({<key>})
+
+CONSULTA PLANO DE EXCECUÇÃO
+db.cliente.find().explain()
+db.cliente.find().hint({nome: 1}).explain()
+
+CONSULTA A PARTIR DO INDEX
+db.produto.find().hint({nome: 1})
+
+CONSULTA PLANO DE EXCECUÇÃO COM INDEX
+db.produto.explain().find().hint({nome: 1})
+
+APLICAR EXPRESSÃO REGULARES NAS CONSULTAS
+db.<nomeCollection>.find({ <field>: { $regex: /pattern/, $options: '<options>' } })
+db.<nomeCollection>.find({{ <field>: { $regex: 'pattern', $options: '<options>' } })
+db.<nomeCollection>.find({{ <field>: { $regex: /pattern/<options> } })
+Options
+i – Ignorar case-sensitive
+m – Combinar várias linhas
+o Incluir as ancoras ^ no inicio e $ no final
+Retornar os clientes da cidade de São Paulo, pesquisando por sao paulo
+o db.cliente.find({nome: {$regex: “s.o paulo", $options: "i"}})
+Retornar os clientes das cidades que começam com “São”
+o db.cliente.find({nome: {$regex: “^são", $options: "i "}})
+Retornar os cpf que contenham letras
+o db.cliente.find({cpf: {$regex: "[a-z]"}})
+
+CONSULTA COM REGEX
+db.produto.find({nome: {$regex: "cpu", $options: "i"}})
+
+CONSULTA INICIANDO COM HD E SOMENTE CAMPOS NOME E QTD
+db.produto.find({nome: {$regex: "^hd", $options: "i"}},{nome: 1, qtd: 1})
+db.produto.find({nome: {$regex: "a", $options: "i"}},{nome: 1, descricao: 1})
+db.produto.find({"descricao.sistema": {$regex: /^windows$/, $options: "i"}},{nome: 1, descricao: 1})
+
+COUNT - AGGREGATION
+db.<nomeCollection>.count()
+
+DISTINCT - AGGREGATION
+db.<nomeCollection>.distinct(“<atributo>")
+
+ESTIMATEDDOCUMENTCOUNT
+db.<nomeCollection>. estimatedDocumentCount()
+
+AGRUPAR VALORES DE VÁRIOS DOCUMENTOS E EXECUTAR OPERAÇÕES NOS DADOS AGRUPADOS PARA RETORNAR UM ÚNICO RESULTADO
+db.<nomeCollection>.aggregate([
+{$<estagio>:<parâmetros>},
+{$<estagio>::<operadoresExpressão>},
+{$<estagio>:<parâmetro>, <operadoresExpressão>}
+]}
+
+MATCH - AGGREGATION 
+db.<nomeCollection>.aggregate([
+{ $match: { <query> }
+]}
+
+
+
+MATCH E GROUP - AGGREGATION 
+db.funcionarios.aggregate([
+{ $match: { status: "Ativo" } },
+{ $group: {
+_id: "$setor",
+total: { $sum: "$vendas" } }
+])
+
+
+MATCH E GROUP C/ LIMIT
+db.funcionarios.aggregate([
+{ $match: { status: "Ativo" } },
+{ $group: {
+_id: "$setor",
+total: { $sum: "$vendas" },
+media: {$avg: “$vendas”} ,
+quantidade: {$count: 1}
+},
+{$sort: {_id: 1}},
+{$limit: 10}
+])
+
+
+GROUP - AGGREGATION 
+db.<nomeCollection>.aggregate(
+{$group:{
+_id: “$<atributo>”,
+<atributoNovo>: { <accumulator1> : “$<atributoAgg>”},
+...
+}
+})
+
+
+VISUALIZAR OS VALORES ÚNICOS DO “NIVEL” DE CADA “ANO_INGRESSO” (AGGREGATIONS COM ADDTOSET)
+{
+  _id: "$ano_ingresso",
+  nivel_por_ano: {
+    $addToSet: "$nivel"
+  }
+}
+
+CALCULAR A QUANTIDADE DE ALUNOS MATRICULADOS POR CADA “ID_CURSO” (AGGREGATIONS COM SUM)
+{
+  _id: "$id_curso",
+  qtd_curso: {
+    $sum: 1
+  }
+}
+
+CALCULAR A QUANTIDADE DE ALUNOS MATRICULADOS POR “ANO_INGRESSO” NO "ID_CURSO“: 1222 (AGGREGATIONS COM MATCH+GROUP)
+{
+  "id_curso": 1222
+}
+
++
+
+{
+  _id: "$ano_ingresso",
+  qtd_curso: {
+    $sum: 1
+  }
+}
+
+
+
+VISUALIZAR TODOS OS DOCUMENTOS DO “NÍVEL”: “M” (AGGREGATIONS MATCH)
+{
+  "nivel": "M"
+}
+
+VISUALIZAR O ÚLTIMO ANO QUE TEVE CADA CURSO (ID_CURSO) DOS NÍVEIS “M” (AGGREGATIONS MATCH+GROUP)
+{
+  "nivel": "M"
+}
+
++
+
+{
+  _id: "$id_curso",
+  ultimo_ano: {
+    $max: "$ano_ingresso"
+  }
+}
+
+
+VISUALIZAR O ÚLTIMO ANO QUE TEVE CADA CURSO (ID_CURSO) DOS NÍVEIS “M”, ORDENADOS PELOS ANOS MAIS NOVOS DE CADA CURSO (AGGREGATIONS MATCH+GROUP+SORT)
+{
+  "nivel": "M"
+}
+
++
+
+{
+  _id: "$id_curso",
+  ultimo_ano: {
+    $max: "$ano_ingresso"
+  }
+}
+
++
+
+{
+  "ultimo_ano": -1
+}
+
+
+
+VISUALIZAR O ÚLTIMO ANO QUE TEVE OS 5 ÚLTIMOS CURSOS (ID_CURSO) DOS NÍVEIS “M”, ORDENADOS PELOS ANOS MAIS NOVOS (AGGREGATIONS MATCH+GROUP+SORT+LIMIT)
+{
+  "nivel": "M"
+}
+
++
+
+{
+  _id: "$id_curso",
+  ultimo_ano: {
+    $max: "$ano_ingresso"
+  }
+}
+
++
+
+{
+  "ultimo_ano": -1
+}
+
+
++
+
+5
+
+
+LOOKUP
+Left outer join
+Sintaxe:
+o db.<nomeCollection>.aggregate(
+{ $lookup: {
+from: <collectionJoin>
+localField: <atributoJoinLocal>
+foreignField: <atributoJoinFrom>
+as: <nomeArraySaida>
+}
+
+EXEMPLO:
+o db.funcionario.aggregate([
+{ $lookup: {
+from: “vendas”
+localField: “cod_func”
+foreignField: “cod_func”
+as: “vendasFuncionario”
+
+},
+{$project: {“_id”:0,”cod_func”: 1,
+“vendasFuncionario.cod_cliente”: 1}
+}
+]}
+
+ronnan_course
+AQgHvgPayIVzD57m database acess passaword mongodb
+
+eDDkHMpQFGvK5Ex3
+
+https://www.youtube.com/watch?v=B3tiXom1T2c left join
+
+
+----------------------------------------------> kafka <------------------------------------------------------------------
+ACESSAR CONTAINER BROKER
+docker exec -it broker bash
+
+LISTAR TÓPICOS
+kafka-topics --bootstrap-server localhost:9092 -list
+
+kafka-topics.sh(INICIO DO COMANDO UTILIZANDO CLUSTER SPARK1)
+
+ou
+kafka-topics --zookeeper localhost:2181 --list
+
+kafka-topics.sh(INICIO DO COMANDO UTILIZANDO CLUSTER SPARK1)
+
+CRIAR TÓPICO
+kafka-topics --bootstrap-server localhost:9092 --topic <nomeTópico> --create --partitions 3 --replication-factor 1
+
+DESCREVER TÓPICO
+kafka-topics --bootstrap-server localhost:9092 --topic <nomeTópico> --describe
+
+DELETAR TÓPICO
+kafka-topics --bootstrap-server localhost:9092 --topic <nomeTópico> --delete
+
+ENVIAR DADOS - PRODUCERS
+kafka-console-producer --broker-list localhost:9092 --topic <nomeTópico>
+
+ENVIAR DADOS PARA TODOS RECONHECEREM (LEADER E ISR) - PRODUCERS
+kafka-console-producer --broker-list localhost:9092 --topic <nomeTópico> --producer-property acks=all
+
+RECEBER MENSAGENS EM TEMPO REAL - CONSUMERS
+kafka-console-consumer -bootstrap-server localhost:9092 --topic <nomeTópico>
+
+RECEBER MENSAGENS DESDE A CRIAÇÃO DO TÓPICO - CONSUMERS
+kafka-console-consumer -bootstrap-server localhost:9092 --topic <nomeTópico> --from-beginning
+
+CRIAR GRUPO DE CONSUMIDORES - CONSUMERS
+kafka-console-consumer -bootstrap-server localhost:9092 --topic <nomeTópico> --group <nomeGrupo>
+
+LISTAR GRUPOS - CONSUMERS
+kafka-consumer-groups -bootstrap-server localhost:9092 --list
+
+DESCREVER GRUPO - CONSUMERS
+kafka-consumer-groups -bootstrap-server localhost:9092 --describe --group <nomeGrupo>   (grupo cria automaticamente)
+
+REDEFINIR O DESLOCAMENTO DO MAIS ANTIGO - CONSUMERS
+kafka-consumer-groups -bootstrap-server localhost:9092 --group <nomeGrupo> \
+--reset-offsets --to-earliest --execute --topic <nomeTópico>
+
+ALTERAR O DESLOCAMENTO - CONSUMERS
+kafka-consumer-groups –bootstrap-server localhost:9092 \
+--group <nomeGrupo>--reset-offsets --shift-by 2 --execute --topic <nomeTópico>
+
+ksql -ver codigos
+VISUALIZAR TÓPICOS
+ksql> list topics;
+
+MOSTRAR CONTEÚDO DO TÓPICO EM TEMPO REAL
+Ksql> print “<nomeTopico>” <propriedades>;
+
+COMANDO PARA VISUALIZAR STREAMS
+Ksql> list streams;
+
+CRIAR STREAM
+Ksql> create stream <nomeStream> (<campo> <tipo>, ..., <campo> <tipo>) with (
+Kafka_topic=‘<nomeTopic>’, value_format=‘<formato>’, KEY=‘<campoChave>’,
+TIMESTAMP=‘<campoTimestamp> ...');
+
+CREATE STREAM users_raw(userid VARCHAR KEY, registertime BIGINT) WITH (KAFKA_TOPIC='users', VALUE_FORMAT='JSON', TIMESTAMP='registertime');
+
+select * from USERS_AVRO EMIT CHANGES;
+
+
+CRIAR TÓPICO CSV
+Ksql> create stream cad_str_csv (nome varchar, cidade varchar) with (Kafka_topic=‘cadastro’,
+value_format=‘delimited’);
+
+CRIAR TÓPICO JSON
+Ksql> create stream cad_str_json (nome varchar, cidade varchar) with (Kafka_topic=‘cadastrojson’,
+value_format=‘json’);
+
+ALTERAR FORMATO DE SERIALIZAÇÃO DE CSV/JSON PARA AVRO
+Ksql> create stream cad_avro_csv with (kafka_topic=‘cadastro-avro’, value_format='avro') as select * from
+cad_str;
+Ksql> create stream cad_str_json with (kafka_topic=‘cadastro-avro’, value_format='avro') as select * from
+cad_str;
+
+VISUALIZAR CONTEÚDO DO STREAM
+Ksql> select * from cad_str limit 10;
+
+SETAR PROPRIEDADES
+Ksql> set <propriedade> = <valor>
+
+DESFAZER PROPRIEDADES
+Ksql> unset <propriedade> = <valor>
+
+INSERÇÃO
+insert into <stream_name|table_name> (<column_name>, <...>) values (<value>, ’<value>’, <...>);
+
+DELETAR UMA STREAM
+ksql> drop stream <nomeStream>;
+
+DELETAR UMA STREAM E SEU TÓPICO
+ksql> drop stream <nomeStream> delete topic;
+ksql> drop stream if exists <nomeStream> delete topic;
+
+AGREGAÇÕES
+count
+max
+min
+sum
+topk
+topkdistinct
+
+CONTAR A QUANTIDADE DE LINHAS DE UM CAMPO STREAM
+Ksql> count(*) from <nomeStream>;
+
+CONTAR A QUANTIDADE DE LINHAS DE TODO O TÓPICO
+ksql> CREATE STREAM <novoStream> AS SELECT 1 AS unit FROM <nomeSteamParaContar>;
+select count(unit) from <novoStream> group by unit;
+
+EXEMPLO DATAGEN
+CRIANDO DADOS DE TEST COM DATAGEN
+ksql-datagen bootstrap-server=broker:29092 schemaRegistryUrl=schema-registry:8081 quickstart=orders topic=orders_topic
+
+ksql-datagen bootstrap-server=broker:29092 schemaRegistryUrl=schema-registry:8081 quickstart=users topic=users
+
+
+ksql-datagen \
+bootstrap-server=broker:29092 \
+quickstart= <orders, users, pageviews> \
+schema=<ArquivoAvro> \
+schemaRegistryUrl=schema-registry:8081 \
+key-format=<avro, json, Kafka ou delimited> \
+value-format=<avro, json ou delimited> \
+topic=<nomeTopico> \
+key=<campoChave> \
+iterations=<númeroLinhas> \
+msgRate=<TaxaMsg/segundo>
+
+VISUALIZAR DADOS NO TÓPICO ORDERS_TOPIC
+ksql> print “orders_topic”
+
+VISUALIZAÇÃO DE DADOS STEAM
+ksql> select * from orders_filtrada;
+
+ACESSAR O CONTAINER SCHEMA-REGISTRY (PARA FORMATO DO TIPO AVRO E OUTROS)
+$ docker exec -it schema-registry bash
+
+ATUALIZAR / EVOLUIR O ESQUEMA - AVRO
+kafka-avro-console-producer --broker-list localhost:9092 --topic test-avro --property schema.registry.url=http://localhost:8081 --property value.schema='{"type":"record","name":"myrecord","fields":[ {"name":"id","type":"int"}, {"name":"nome","type":"string"},{"name":"cidade","type":"string",
+"default":"null"}]}’
+
+AVRO CONSOLE CONSUMER
+kafka-avro-console-consumer --topic users-avro --bootstrap-server broker:29092 --property schema.registry.url=http://localhost:8081 --from-beginning
+
+AVRO CONSOLE PRODUCER
+kafka-avro-console-producer --broker-list broker:29092 --topic users-avro --property schema.registry.url=http://localhost:8081 --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"id","type":"int"},{"name":"nome","type":"string"}]}'
+
+kafka-avro-console-producer --broker-list broker:29092 --topic users-avro --property schema.registry.url=http://localhost:8081 --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"id","type":"int"},{"name":"nome","type":"string"},{"name":"unit","type":"int","default":"1"}]}'
+
+
+	EX DE SAIDA:
+	{"id":1,"nome":"RODRIGO","unit":1}
+	{"id":2,"nome":"RODRIGO2"}
+	{"id":3,"nome":"RODRIGO3"}
+	{"id":4,"nome":"RONNAN4"}
+	{"id":5,"nome":"FELIPE5"}
+	{"id":6,"nome":"AUGUSTO6"}
+	{"id":7,"nome":"Rodrigo7"}
+	{"id":8,"nome":"Rodrigo8"}
+	
+ABRIR CONTAINER KSQL
+docker exec -it ksqldb-server ksql http://ksqldb-server:8088 ou docker exec -it ksqldb-server bash ksql
+
+CRIANDO STREAM NO FORMATO AVRO
+Ksql> create stream str_test-avro with ( Kafka_topic='test-avro', value_format='avro');
+
+LINK DO CONTROL CENTER
+http://localhost:9021/clusters
+
+ATUALIZANDO SCHEMA AVRO - PRODUCER
+kafka-avro-console-producer --broker-list localhost:29092 --topic users-avro --property schema.registry.url:http://localhost:8081 --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"id","type":"int"},{"name":"nome","type":"string"},{"name":"unit","type":"int","default":"1"}]}'
+
+VISUALIZAR OS DADOS NO STREAM DO TÓPICO USERS-AVRO
+kafka-topics --bootstrap-server localhost:9092 -list
+kafka-topics --bootstrap-server localhost:9092 --topic users-avro --list
+
+LISTAR STREAMS NO KSQL
+list streams;
+
+SET PARA VOLTAR AO ESTADO ANTERIOR DA PRODUCER
+SET 'auto.offset.reset'='earliest';
+
+SELECT AVRO STREAM
+select * from users_avro emit changes;
+
+
+----------------------------------------------> kafka com spark<------------------------------------------------------------------
+INICIAR SPARK-SHELL COM AS DEPENDENCIAS DO KAFKA
+spark-shell --packages org.apache.spark:spark-streaming-kafka-0-10_2.11:2.4.1
+
+
+CRIANDO STREAMING KAFKA NO SPARK
+
+import org.apache.kafka.clients.consumer.ConsumerRecord
+import org.apache.kafka.common.serialization.StringDeserializer
+import org.apache.spark.streaming.kafka010._
+import org.apache.spark.streaming.kafka010.LocationStrategies.PreferConsistent
+import org.apache.spark.streaming.kafka010.ConsumerStrategies.Subscribe
+
+val kafkaParams = Map[String, Object](
+  "bootstrap.servers" -> "kafka:9092",
+  "key.deserializer" -> classOf[StringDeserializer],
+  "value.deserializer" -> classOf[StringDeserializer],
+  "group.id" -> "aplicacao1",
+  "auto.offset.reset" -> "earliest",
+  "enable.auto.commit" -> (false: java.lang.Boolean)
+)
+
+
+IMPORTAR STREAMING CONTEXT
+import org.apache.spark.streaming.{StreamingContext, Seconds}
+
+CRIANDO SESSÃO SPARK
+val ssc = new StreamingContext(sc, Seconds(5))
+
+LER O TOPICO QUE JÁ ESTÁ CRIADO NO CONTAINER KAFKA
+val topic = Array("topic-spark")
+
+CRIANDO STREAM UTILIZANDO O STREAMINGCONTEXT(val SSC) E SUBSCRIBE "val TOPIC"
+val stream = KafkaUtils.createDirectStream[String, String](
+  ssc,
+  PreferConsistent,
+  Subscribe[String, String](topic, kafkaParams)
+)
+
+CRIAR DATAFRAME PARA ARMAZENAR E VISUALIZAR STREAMS
+val info_stream = stream.map(record => (
+  record.topic,
+  record.partition,
+  record.value
+))
+
+VERIFICANDO
+info_stream.print()
+
+SALVANDO DENTRO DO HDFS
+info_stream.saveAsTextFiles("/user/ronnan/kafka/dstream")
+
+INCIANDO O TOPIC SPARK
+ssc.start /
+
+EXEMPLO COM CHAVE VALOR
+scala> import org.apache.kafka.clients.consumer.ConsumerRecord
+scala> import org.apache.kafka.common.serialization.StringDeserializer
+scala> import org.apache.spark.streaming.kafka010._
+scala> import org.apache.spark.streaming.kafka010.LocationStrategies.PreferConsistent
+scala> import org.apache.spark.streaming.kafka010.ConsumerStrategies.Subscribe
+scala> import org.apache.spark.streaming.{StreamingContext, Seconds}
+
+scala> val kafkaParams = Map[String, Object](
+     |   "bootstrap.servers" -> "kafka:9092",
+     |   "key.deserializer" -> classOf[StringDeserializer],
+     |   "value.deserializer" -> classOf[StringDeserializer],
+     |   "group.id" -> "aplicacao1",
+     |   "auto.offset.reset" -> "earliest",
+     |   "enable.auto.commit" -> (false: java.lang.Boolean)
+     | )
+
+scala> val ssc = new StreamingContext(sc, Seconds(5))
+
+scala> val topic = Array("topic-kvspark")
+
+scala> val stream = KafkaUtils.createDirectStream[String, String](
+     |   ssc,
+     |   PreferConsistent,
+     |   Subscribe[String, String](topic, kafkaParams)
+     | )
+
+scala> val info_dstream = stream.map(record => (
+     | record.topic,
+     | record.partition,
+     | record.key,
+     | record.value
+     | ))
+
+scala> info_dstream.print()
+
+scala> info_dstream.saveAs
+saveAsObjectFiles   saveAsTextFiles
+
+scala> info_dstream.saveAsTextFiles("/user/ronnan/kafka/dstreamkv")
+
+scala> ssc.start()
+
+CRIAR LEITURA STREAM USANDO PYSPARK AO INVES DE SPARK-SHELL(SCALA)
+porta_leitura = spark.readStream.format("socket").option("host","localhost").option("port","9999").load()
+porta_saida = porta_leitura.writeStream.format("console").start()
+
+UTILIZANDO NETCAT DENTRO DO CONTAINER JUPYTER PARA INJETAR MENSAGENS
+nc -lp 9999
+
+
+----------------------------------------------> REDIS <------------------------------------------------------------------
+BAIXANDO REDIS
+https://hub.docker.com/_/redis
+
+ACESSO REDIS CLI E SERVER
+$ docker exec -it redis bash
+# redis-cli
+# redis-server
+
+Definir um valor de string
+ SET <chave> <valor>
+ 
+Recuperar um valor de string
+ GET <chave>
+
+NX – Falhar se a chave existir
+ SET <chave> <valor> nx
+
+XX (Default) – Substituir o valor da chave
+ SET <chave> <valor> xx
+ 
+Verificar o tamanho do valor
+strlen <chave>
+
+String como um inteiro
+Sintaxe para incrementos e decrementos do valor
+incr <chave>
+decr <chave>
+incrby <chave> <incremento>
+decrby <chave> <decremento>
+
+Definir e recuperar várias chaves em um comando
+MSET <chave 1> <valor> <chave 2> <valor> ... <chave N> <valor>
+MGET <chave 1> <chave 2>... <chave N>
+
+o Verificar se a chave existe
+exists <chave>
+
+o Deletar chave
+del <chave>
+
+Tipo da chave
+type <chave>
+
+Definir tempo para a chave expirar
+expire <chave> <tempo segundos>
+pexpire <chave> <tempo milissegundos>
+set <chave> <valor> ex <tempo segundos>
+set <chave> <valor> px <tempo milissegundos >
+
+Verificar o tempo restante de vida da chave
+ttl <chave> (reposta em segundos)
+pttl <chave> (reposta em milissegundos)
+
+Remover tempo para a chave expirar
+persist <chave>
+
+>>>>>Listas
+Recuperar um elemento e eliminá-lo da lista
+No inicio (esquerda) da lista
+LPOP <chave>
+
+No final (direita) da lista
+RPOP <chave>
+
+
+Recuperar um elemento e eliminá-lo da lista
+Bloquear se a lista estiver vazia até o tempo especificado
+Evitar respostas Null
+Implementar uma fila
+lpush
+rpop
+
+No inicio (esquerda) da lista
+BLPOP <chave> <tempo>
+
+No final (direita) da lista
+BRPOP <chave> <tempo>
+Retornar Null quando não existir elementos e o tempo se esgotar
+
+Definir um novo intervalo para a lista
+ltrim <chave> <novoInicio> <novoFim>
+
+Visualizar o tamanho da lista
+llen <chave>
+
+>>>>> Sets são coleções não ordenadas de strings
+Adicionar elementos
+sadd <chave> <valor1> ... <valorN>
+
+Retornar todos os elementos
+smembers <chave>
+
+Recuperar um elemento e remove-lo do set
+spop <chave>
+
+Verificar se um elemento existe
+sismember <chave> <valor>
+
+Visualizar o número de elementos
+scard <chave>
+
+Remover um elemento
+srem <chave>
+
+Interseção de vários sets
+sinter <chave1> ... <chaveN>
+
+Diferença de vários sets
+sdiff <chave1> ... <chaveN>
+
+União de vários sets
+sunion <chave1> ... <chaveN>
+
+Armazenar os múltiplos sets em outra chave
+sinterstore <chaveArmazenamento> <chave1> ... <chaveN>
+sdiffstore <chaveArmazenamento> <chave1> ... <chaveN>
+sunionstore <chaveArmazenamento> <chave1> ... <chaveN>
+
+Sorted sets são compostos de elementos de string únicos e não repetitivos
+Adicionar elementos
+zadd <chave> <score1> <valor1> ... <scoreN> <valorN>
+
+Visualizar elementos em um intervalo na lista
+Crescente - zrange <chave> <inicio> <fim> [withscores]
+Decrescente - zrevrange <chave> <inicio> <fim> [withscores]
+
+Recuperar um elemento e remove-lo do set
+Maior score - zpopmax <chave>
+Menor score - zpopmin <chave>
+
+Bloquear se o set estiver vazio até um determinado tempo t
+Maior score - bzpopmax <chave> <t>
+Menor score - bzpopmin <chave> <t>
+
+Visualizar a posição de um elemento
+zrank <chave> <valor>
+zrevrank <chave> <valor>
+
+Visualizar o score de um elemento
+zscore <chave> <valor>
+
+Visualizar o número de elementos
+zcard <chave>
+
+Remover um elemento específico
+zrem <chave> <valor>
+
+>>>> Hashes são pares de valor de campo
+
+Definir o valor de um campo de hash
+hmset <chave> <campo1> <valor> ...
+
+Obter o valor de um campo de hash
+hget <chave> <campo>
+
+Obter os valores dos campos de hash
+hmget <chave> <campo1> ...
+
+Obter todos os campos e valores de uma hash
+hgetall <chave>
+
+Incrementar valores nos campos
+hincrby <chave> <campo> <incremento>
+
+Obter o número de campos
+hlen <chave>
+
+Obter o tamanho do valor de um campo
+hstrlen <chave> <campo>
+
+Obter todos os campos da hash
+hkey <chave> <campo>
+
+Obter todos os valores da hash
+hvals <chave>
+
+Deletar o campo
+hdel <chave> <campo>
+
+
+----------------------------------------------> ELASTIC SEARCH <------------------------------------------------------------------
+
+
+Comunicação Protocolo HTTP
+• HEAD - LER CABEÇALHO E VERIFICAR SE EXITE DOCUMENTO(Retorna apenas o cabeçalho do HTTP)
+• GET - ABRIR UM DOCUMENTO E BUSCAR
+• POST - Criar um documento com _id ou atualizar um documento parcial 
+• PUT - Criar ou reindexar um documento inteiro (_version)
+• DELETE
+
+
+VERIFICAR SE UM DOC EXISTE
+HEAD produto/_doc/1
+
+CRIAR OU REINDEXAR
+PUT cliente/_doc/1
+{
+"nome" : "Lucas",
+"idade" : 20,
+"conhecimento" : "Windows, Office, Hadoop, Elastic"
+}
+
+
+CRIAR UM DOC
+POST produto/_doc/1
+
+ATUALIZAR UM DOC
+POST produto/_update/1
+{
+	"doc":{
+		qtd:30
+	}
+}
+
+DELETAR UM DOCUMENTO
+DELETE produto/_doc/4
+
+ABRIR UM DOCUMENTO
+GET produto/_doc/4
+
+CONTAR TODOS OS DOCUMENTOS
+GET produto/_count
+
+Informações sobre o nó do elasticseach (http://localhost:9200/)
+GET /
+
+Buscar todos os documentos em um índice
+GET cliente/_search
+
+Buscar um documento em um índice
+GET cliente/_doc/1
+
+Buscar a quantidade de documentos em um índice
+GET cliente/_count
+
+Buscar os dados de um documento em um índie
+GET cliente/_source/1
+SQL -> select * from cliente where id=1
+
+BULK API (varias chamadas operações)
+
+POST concessionaria/_bulk
+{"create": {"_id" : "1"}}
+{"nome":"carro"}
+{"create": {"_id" : "2"}}
+{"nome":"automóvel"}
+{"create": {"_id" : "3"}}
+{"nome":"caminhão"}
+{"create": {"_id" : "4"}}
+{"nome":"caminhonete"}
+{"create": {"_id" : "5"}}
+{"nome":"veículo"}
+
+Linuxedit
+To view the current value for the vm.max_map_count setting, run:
+grep vm.max_map_count /etc/sysctl.conf
+vm.max_map_count=262144
+
+To apply the setting on a live system, run:
+sudo sysctl -w vm.max_map_count=262144
+To permanently change the value for the vm.max_map_count setting, update the value in /etc/sysctl.conf.
+
+Pesquisar no índice produto os documentos com os seguintes atributos:
+a) Nome = mouse   GET cliente/search?q=nome:João
+
+b) Quantidade = 30  GET produto/_search?q=qtd:30
+
+c) Descrição = USB  GET produto/_search?q=descricao:USB
+
+d) Nome = hd e descrição = windows   GET produto/_search?q=nome:hd&q=descricao:windows
+
+e) Nome = memória e descrição = GB   GET produto/_search?q=nome:memória&q=descricao:GB
+
+2. Pesquisar todos os índices, limitando a pesquisa em 5 documentos em cada página e visualizar a 4 página (Documentos entre 16 á 20 )
+GET _search?&size=5&from=15
+{
+"query": {
+"match_all": {}
+}
+}
+
+GET produto2/_search
+
+PUT produto2/_mapping
+{
+  "properties": {
+    "data": {
+      "type": "date"
+    },
+    "descricao": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "nome": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "qtd": {
+      "type": "short"
+    }
+  }
+}
+
+
+PUT produto2
+{
+  
+}
+
+
+Reindexar o índice produto para produto2, com o campo quantidade para o tipo short
+POST _reindex
+{
+"source": {
+"index": "produto"
+},
+"dest": {
+"index": "produto2"
+}
+}
+
+
+Visualizar o mapeamento do índice produto2
+GET produto2/_mapping
+
+
+Fechar o índice produto
+POST produto/_close
+
+Pesquisar todos os documentos no índice produto
+GET produto/_search
+
+
+Abrir o índice produto
+POST produto/_open
+
+Adicionar o documento:
+_id: 6, "nome": "teclado", "qtd": 100, "descricao": "USB", "data":"2020-09-18"
+
+PUT produto/_doc/6
+{
+"nome" : "teclado",
+"qtd" : 100,
+"descricao" : "USB",
+"data":  "2020-09-18"
+}
+
+
+
+PUT produto/_mapping
+{
+  "properties": {
+    "data": {
+      "type": "date"
+    },
+    "descricao": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "nome": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "qtd": {
+      "type": "long"
+    }
+  }
+}
+
+
+Inserir o campo data do tipo date no índice produto
+
+
+GET produto/_search
+
+Visualizar as configurações do índice produto
+GET produto/_settings
+
+Visualizar o mapeamento do índice produto
+GET produto/_mapping
+
+GET produto/_alias
+
+GET produto/_stats
+
+
+1 - Buscar no termo nome o valor mouse
+GET produto/_search
+{
+"query": {
+"term": {
+"nome": "mouse"
+}
+}
+}
+
+
+2 - Buscar no termo nome os valores mouse e teclado(com array Usar TERMS)
+GET produto/_search
+{
+"query": {
+"terms": {
+"nome":["mouse","teclado"]
+}
+}
+}
+
+3. Realizar a mesma busca do item 1 e 2, desconsiderando o score(score significad ordem semelhante ao order by- (CONSTANT_SCORE)
+
+GET produto/_search
+{
+  "query": {"constant_score": {
+    "filter": {"terms": {
+      "nome": ["mouse","teclado"]
+    }}
+  }}
+}
+  
+}
+
+
+
+
+4. Buscar os documentos que contenham a palavra “USB” no atributo descrição
+
+GET produto/_search
+{"query": {"bool": {"should": [
+  {"term": {
+    "descricao": {
+      "value": "usb"
+    }
+  }}
+]}}
+  
+}
+
+
+5. Buscar os documentos que contenham a palavra “USB” e não contenham a palavra “Linux” no atributo descrição
+(primeiro filtrei o que era linux e depois só USB)
+
+GET produto/_search
+{
+  "query": {
+    "bool": {
+      "must_not": [
+        {
+          "bool": {
+            "filter": [
+              {
+                "term": {
+                  "descricao": "linux"
+                }
+              },
+              {
+                "term": {
+                  "descricao": "usb"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+
+6. Buscar os documentos que podem ter a palavra “memória” no atributo nome ou contenham a palavra “USB” e não contenham a palavra “Linux” no atributo descrição
+
+GET produto/_search
+{
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "match": {
+            "nome": "memória"
+          }
+        },
+        {
+          "match": {
+            "descricao": "usb"
+          }
+        }
+      ],
+      "must_not": [
+        {
+          "match": {
+            "descricao": "linux"
+          }
+        }
+      ]
+    }
+  }
+}
+
+1. Buscar os documentos que contenham as palavras “Windows” e “Linux” no atributo descrição
+
+GET produto/_search
+{
+  "query": {
+    "match": {
+      "descricao": {
+        "query": "Windows Linux",
+        "operator": "and"
+      }}
+    }
+  }
+}
+
+2. Buscar os documentos que contenham as palavras “Windows”, “Linux” ou “USB” no atributo descrição
+
+GET produto/_search
+{
+  "query": {
+    "match": {
+      "descricao": {
+        "query": "Windows Linux USB"
+      }}
+    }
+  }
+}
+
+3. Buscar os documentos que contenham pelo menos 2 palavras da seguinte lista de palavras: “Windows”; “Linux” e “USB” no atributo descrição
+
+GET produto/_search
+{
+  "query": {
+    "match": {
+      "descricao": {
+        "query": "Windows Linux USB",
+        "minimum_should_match": 2
+      }}
+    }
+  }
+}
+
+4. Buscar os documentos que contenham pelo menos 50 % da seguinte lista de palavras: “Windows”; “Linux” e “USB” no atributo descrição
+
+GET produto/_search
+{
+  "query": {
+    "match": {
+      "descricao": {
+        "query": "Windows Linux USB",
+        "minimum_should_match": "50%"
+      }}
+    }
+  }
+}
+
+1. Verificar se existe o índice populacao
+HEAD populacao
+
+
+2. Executar as consultas no índice populacao
+a) Mostrar os documentos com o atributo "Total Population" menor que 100
+GET populacao/_search
+{
+  "query": {
+    "range": {
+      "Total Population": {
+        "lt": 100
+      }
+    }
+  }
+}
+
+b) Mostrar os documentos com o atributo "Median Age" maior que 70
+GET populacao/_search
+{
+  "query": {
+    "range": {
+      "Median Age": {
+        "gt": 70
+      }
+    }
+  }
+}
+
+
+c) Mostrar os documentos 50 (Zip Code: 90056) à 60 (Zip Code: 90067) do índice de populacao (sempre mosta de 10 em 10, mudar o size)
+GET populacao/_search
+{
+  "size": 11, 
+  "query": {
+    "range": {
+      "Zip Code": {
+        "gt": 90056,
+        "lte": 90067
+      }
+    }
+  }
+}
+
+3. Importar através do Kibana o arquivo weekly_MSFT.csv Pré-visualizar o documento (Guia Arquivos/dataset/weekly_MSFT.csv) com o índice bolsa
+
+4. Executar as consultas no índice bolsa
+
+a) Visualizar os documentos do dia 2019-01-01 à 2019-03-01. (hits = 9)
+GET bolsa/_search
+{
+  "query": {
+    "range": {
+      "timestamp": {
+        "gt": "2019-01-01",
+        "lte": "2019-03-01",
+        "format": "yyyy-MM-dd"
+      }
+    }
+  }
+}
+
+
+b) Visualizar os documentos do dia 2019-04-01 até agora. (hits = 3)
+GET bolsa/_search
+{
+  "query": {
+    "range": {
+      "timestamp": {
+        "gt": "2019-04-01",
+        "lt": "now",
+        "format": "yyyy-MM-dd"
+        
+      }
+    }
+  }
+}
+
+Acessar os serviços pela Web
+• Kibana: http://localhost:5601/
+• Elasticsearch: http://localhost:9200/
+
+1. Criar os Analyzer simple, standard, brazilian e portuguese para a seguinte frase:
+ "o elasticsearch surgiu em 2010"
+
+simple --> remover numeros, espações e pontuação(somente texto e em minusculo)
+POST _analyze
+{
+  "analyzer": "simple"
+  , "text": ["o elasticsearch surgiu em 2010"]
+}
+
+standard --> remover numeros, espações e pontuação(somente texto e em minusculo)
+POST _analyze
+{
+  "analyzer": "standard",
+  "text": ["o elasticsearch surgiu em 2010"]
+}
+
+brazilian --> remove acentos, genero e plural
+POST _analyze
+{
+  "analyzer": "brazilian",
+  "text": ["o elasticsearch surgiu em 2010"]
+}
+
+portuguese --> remove acentos, genero e plural
+POST _analyze
+{
+  "analyzer": "portuguese",
+  "text": ["o elasticsearch surgiu em 2010"]
+}
+
+GET produto/_mapping
+2. Realizar os passos no índice produto
+a) Criar um analyzer brazilian para o atributo descricao
+
+criar indice reindexado com mapeamento analyser
+PUT produto1text
+{
+  "settings": {
+    "index":{
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    }
+  },
+  "mappings": {
+    "properties": {
+      "descricao":{
+        "type": "text",
+        "analyzer": "brazilian"
+      }
+    }
+  }
+}
+
+reindexar os dados
+POST _reindex
+{
+  "source": {
+    "index": "produto"
+  },
+  "dest": {
+    "index": "produto1text"
+  }
+}
+
+GET produto1text/_search
+
+GET produto/_search
+{
+  "query": {
+    "match": {
+      "descricao": "compatível"
+    }
+  }
+}
+
+
+b) Para o atributo descricao aplicar o analzyer brazilian para o tipo de campo text e criar o atributo descricao.original com o dado do tipo keyword
+
+PUT produto
+{
+  "settings": {
+    "index":{
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    }
+  },
+  "mappings": {
+    "properties": {
+      "descricao":{
+        "type": "text",
+        "analyzer": "brazilian",
+        "fields": {
+          "original":{"type":"keyword"}
+        }
+      }
+    }
+  }
+}
+
+reindexar os dados
+POST _reindex
+{
+  "source": {
+    "index": "produto1text"
+  },
+  "dest": {
+    "index": "produto"
+  }
+}
+
+
+
+c) Buscar a palavra “compativel” no campo descricao.original (hits = 0)
+
+GET produto/_search
+{
+  "query": {
+    "match": {
+      "descricao.original": "compatível"
+    }
+  }
+}
+
+
+d) Buscar a palavra “compativel” no campo descricao
+
+GET produto/_search
+{
+  "query": {
+    "match": {
+      "descricao": "compatível"
+    }
+  }
+}
+
+Realizar os exercícios no índice bolsa
+1. Calcular a média do campo volume
+GET bolsa/_search
+{
+  "size": 0,
+  "aggs": {
+    "media_volume": {
+      "avg": {
+        "field": "volume"
+      }
+    }
+  }
+}
+
+
+2. Calcular a estatística do campo close
+
+GET bolsa/_search
+{
+  "size": 0,
+  "aggs": {
+    "stats_close": {
+      "stats": {
+        "field": "close"
+      }
+    }
+  }
+}
+
+
+3. Visualizar os documentos do dia 2019-04-01 até agora. (hits = 3)
+GET bolsa/_search
+{
+  "size": 3,
+  "aggs": {
+    "intervalo_data": {
+      "date_range": {
+        "field": "@timestamp",
+        "ranges": [
+          {
+            "from": "2019-04-01",
+            "to": "now"
+          }
+        ]
+      }
+    }
+  }
+}
+
+
+4. Calcular a estatística do campo open do período do dia 2019-04-01 até agora
+
+GET bolsa/_search
+{
+  "size": 0, 
+  "query": {
+    "range": {
+      "@timestamp": {
+        "gt": "2019-04-01",
+        "lt": "now"
+      }
+    }
+  },
+  "aggs": {
+    "stats_open": {
+      "stats": {
+        "field": "open"
+      }
+    }
+  }
+}
+
+
+5. Calcular a mediana do campo open
+GET bolsa/_search
+{
+  "size": 0, 
+  "aggs": {
+    "mediana_open": {
+      "percentiles": {
+        "field": "open",
+        "percents": [50
+        ]
+      }
+    }
+  }
+}
+
+6. Contar a quantidade de documentos agrupados por ano
+GET bolsa/_search
+{
+  "size": 0,
+  "aggs": {
+    "doc_anos": {
+      "date_histogram": {
+        "field": "@timestamp",
+        "calendar_interval": "year"
+      }
+    }
+  }
+}
+
+7. Contar a quantidade de documentos de 2 anos atrás até hoje
+
+GET bolsa/_search
+{
+  "size": 0,
+  "aggs": {
+    "qtd_2anos": {
+      "date_range": {
+        "field": "@timestamp",
+        "ranges": [
+          {
+            "from": "2018-10-09",
+            "to": "now"
+          }
+        ]
+      }
+    }
+  }
+}
+
+
+Mostrar indice do filebeat com logstash
+GET ronnan-2022.04.02/_search
+
+mostra todos os indices que ja foram criados
+GET _cat/indices?v
+
+GET heartbeat-7.9.2-2022.04.02-000001/_search
+
+GET heartbeat-7.9.2-2022.04.02-000001/_count
+
+GET metricbeat-7.9.2-2022.04.02-000001/_search
+
+GET metricbeat-7.9.2-2022.04.02-000001/_count
+
+GET metricbeat-7.9.2-2022.04.02-000001/_search
+{
+  "size": 10
+}
+
+
+GET filebeat-7.9.2-2022.03.31-000001/_search
+
+
+ 
+
+
