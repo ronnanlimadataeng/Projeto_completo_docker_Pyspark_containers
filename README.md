@@ -1,4 +1,4 @@
-# Big_data_Engineer_Projeto_Final_Spark_Semantix
+# Projeto_Final_Spark_Semantix
 
 * Leitura da doc de instalação do [docker](https://docs.docker.com/engine/install/ubuntu/)
 
